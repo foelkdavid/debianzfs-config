@@ -27,8 +27,10 @@ link_config "$REPO_DIR/dotfiles/zsh/zshrc" "$HOME/.zshrc"
 link_config "$REPO_DIR/dotfiles/zsh/zprofile" "$HOME/.zprofile"
 
 if command -v xdg-user-dirs-update >/dev/null 2>&1; then xdg-user-dirs-update; fi
-bash "$REPO_DIR/scripts/zsh/deploy.sh"
-bash "$REPO_DIR/scripts/fonts/deploy.sh"
+if [[ ${DEBIANZFS_SKIP_OPTIONAL_ASSETS:-false} != true ]]; then
+    bash "$REPO_DIR/scripts/zsh/deploy.sh"
+    bash "$REPO_DIR/scripts/fonts/deploy.sh"
+fi
 
 install -d -m 755 "$HOME/.local/state/noctalia"
 if [[ ! -e $HOME/.local/state/noctalia/settings.toml ]]; then

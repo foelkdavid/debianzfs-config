@@ -12,3 +12,6 @@ are replaced. After updating the checkout with `git pull`, rerun the script.
 The scripts in `scripts/` can also be run individually. The installer owns
 system packages and privileged wallpaper placement; this repository owns
 per-user configuration and the shortcut assets.
+
+Set `DEBIANZFS_SKIP_OPTIONAL_ASSETS=true` to skip font downloads and Zsh plugin
+cloning when refreshing the links offline.
