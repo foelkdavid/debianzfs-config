@@ -42,5 +42,4 @@ if [[ ${DEBIANZFS_SKIP_OPTIONAL_ASSETS:-false} != true ]]; then
     fi
 fi
 
-if command -v xdg-user-dirs-update >/dev/null 2>&1; then xdg-user-dirs-update; fi
 printf 'Dotfiles linked from %s/dotfiles.\n' "$REPO_DIR"
