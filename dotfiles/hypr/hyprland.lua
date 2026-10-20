@@ -1,51 +1,7 @@
--- deploy.sh writes hardware-specific settings outside this symlinked directory.
-local configHome = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
-local graphicsConfig = configHome .. "/debian-deploy/graphics.lua"
-local deployment = {}
-local graphicsFile = io.open(graphicsConfig, "r")
-if graphicsFile then
-    graphicsFile:close()
-    deployment = dofile(graphicsConfig)
-end
-
--- A fallback also covers outputs that are not yet visible to hyprctl at startup.
-hl.monitor({ output = "", mode = "preferred", position = "auto", scale = deployment.monitor_scale or 1.0 })
-
--- Use the connected monitor order reported by Hyprland instead of assuming
--- particular connector names. Hyprland reports the primary output first.
-local monitors = {}
-local monitorList = io.popen("hyprctl monitors 2>/dev/null", "r")
-if monitorList then
-    for line in monitorList:lines() do
-        local name = line:match("^Monitor%s+(%S+)")
-        if name then
-            monitors[#monitors + 1] = name
-        end
-    end
-    monitorList:close()
-end
-
-local homeMonitor = monitors[1]
-local secondaryMonitor = monitors[2]
-
-if homeMonitor then
-    hl.monitor({
-        output = homeMonitor,
-        mode = "preferred",
-        position = "0x0",
-        scale = deployment.monitor_scale or 1.0,
-    })
-end
-
-if secondaryMonitor then
-    hl.monitor({
-        output = secondaryMonitor,
-        mode = "preferred",
-        position = "auto-right",
-    })
-end
-
-local lockScript = "noctalia msg session lock"
+-- MONITORS
+-- Use each screen's preferred resolution/refresh rate and arrange screens rightward.
+-- Change scale here (for example, 1.25 or 1.5 makes everything larger).
+hl.monitor({ output = "", mode = "preferred", position = "auto-right", scale = 1.0 })
 
 -- AUTOSTART
 hl.on("hyprland.start", function()
@@ -54,27 +10,16 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("noctalia --daemon")
 end)
 
------------------------------
--- ENVIRONMENT VARIABLES
------------------------------
-
--- Do not force GDK_SCALE=2 together with Hyprland fractional scaling.
--- Let the compositor scale the desktop; only re-enable a toolkit-specific
--- scale if one app family is wrong.
--- hl.env("GDK_SCALE", "2")
-
+-- ENVIRONMENT
 hl.env("XCURSOR_SIZE", "32")
 hl.env("HYPRCURSOR_SIZE", "32")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "gtk")
--- hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("GTK_THEME", "Adwaita:dark")
 
------------------
 -- LOOK AND FEEL
------------------
 
 hl.config({
     xwayland = {
@@ -100,15 +45,15 @@ hl.config({
         active_opacity = 1.0,
         inactive_opacity = 1.0,
         shadow = {
-            enabled = not deployment.vm,
+            enabled = true,
         },
         blur = {
-            enabled = not deployment.vm,
+            enabled = true,
         },
     },
 
     animations = {
-        enabled = not deployment.vm,
+        enabled = true,
     },
 
     master = {
@@ -142,7 +87,7 @@ hl.config({
         inactive_timeout = 0,
         hide_on_key_press = false,
         invisible = false,
-        no_hardware_cursors = deployment.vm and 1 or 2,
+        no_hardware_cursors = 2,
         no_warps = true,
     },
 })
@@ -150,10 +95,6 @@ hl.config({
 hl.curve("easeOutQuint", {
     type = "bezier",
     points = { { 0.23, 1 }, { 0.1, 1 } },
-})
-hl.curve("easeInOutCubic", {
-    type = "bezier",
-    points = { { 0.65, 0.05 }, { 0.1, 1 } },
 })
 hl.curve("linear", {
     type = "bezier",
@@ -185,9 +126,7 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 1.94, bezier = "almo
 hl.animation({ leaf = "workspacesIn", enabled = true, speed = 1.21, bezier = "almostLinear", style = "fade" })
 hl.animation({ leaf = "workspacesOut", enabled = true, speed = 1.94, bezier = "almostLinear", style = "fade" })
 
-----------------
--- KEYBINDINGS
-----------------
+-- SHORTCUTS
 
 local mainMod = "SUPER"
 
@@ -195,10 +134,9 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("alacritty"))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("noctalia msg panel-toggle launcher"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("Thunar"))
--- hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("your-notes-command"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(lockScript))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("noctalia msg session lock"))
 
 -- Screenshot
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("slurp | grim -g - - | wl-copy -t image/png"))
@@ -207,22 +145,22 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("slurp | grim -g - - | wl-cop
 hl.bind(mainMod .. " + V", hl.dsp.window.float())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
 
--- River-like next/previous focus
-hl.bind(mainMod .. " + right", hl.dsp.layout("cyclenext"))
-hl.bind(mainMod .. " + down", hl.dsp.layout("cyclenext"))
-hl.bind(mainMod .. " + left", hl.dsp.layout("cycleprev"))
-hl.bind(mainMod .. " + up", hl.dsp.layout("cycleprev"))
+-- Focus the window in the arrow direction
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
 
 -- Switch focus between monitors
 hl.bind(mainMod .. " + period", hl.dsp.focus({ monitor = "+1" }))
 
--- River-like swap next/previous
-hl.bind(mainMod .. " + SHIFT + right", hl.dsp.layout("swapnext"))
-hl.bind(mainMod .. " + SHIFT + down", hl.dsp.layout("swapnext"))
-hl.bind(mainMod .. " + SHIFT + left", hl.dsp.layout("swapprev"))
-hl.bind(mainMod .. " + SHIFT + up", hl.dsp.layout("swapprev"))
+-- Swap with the window in the arrow direction
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.swap({ direction = "right" }))
+hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.swap({ direction = "down" }))
+hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.swap({ direction = "left" }))
+hl.bind(mainMod .. " + SHIFT + up", hl.dsp.window.swap({ direction = "up" }))
 
--- Main/secondary ratio, River rivertile equivalent for the master layout
+-- Adjust the width of the master area
 hl.bind(mainMod .. " + CTRL + left", hl.dsp.layout("mfact -0.05"), { repeating = true })
 hl.bind(mainMod .. " + CTRL + right", hl.dsp.layout("mfact +0.05"), { repeating = true })
 
@@ -231,58 +169,72 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(mainMod .. " + mouse:274", hl.dsp.window.float())
 
--- Switch workspaces and move the active window with SUPER + [0-9].
-for i = 1, 10 do
-    local key = i % 10
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+-- WORKSPACES
+-- Ten workspaces per monitor: monitor ID 0 gets 1-10, ID 1 gets 11-20, etc.
+-- IDs stay stable during the session, even when another monitor disconnects.
+local knownMonitors = {}
+local function configureWorkspaces(disconnected)
+    local connected = {}
+    for _, monitor in ipairs(hl.get_monitors()) do
+        if monitor.name ~= disconnected then
+            connected[monitor.id] = monitor
+            knownMonitors[monitor.id] = monitor.name
+        end
+    end
+    for id, name in pairs(knownMonitors) do
+        for number = 1, 10 do
+            hl.workspace_rule({
+                workspace = tostring(id * 10 + number),
+                monitor = name,
+                default = number == 1,
+                persistent = true,
+                -- Do not create empty workspaces for disconnected screens.
+                enabled = connected[id] ~= nil,
+            })
+        end
+    end
+    -- Restore workspaces that moved to another screen while theirs was unplugged.
+    for _, workspace in ipairs(hl.get_workspaces()) do
+        local monitor = connected[math.floor((workspace.id - 1) / 10)]
+        if monitor and workspace.monitor and workspace.monitor.name ~= monitor.name then
+            hl.dispatch(hl.dsp.workspace.move({ workspace = workspace.id, monitor = monitor.name }))
+        end
+    end
 end
+configureWorkspaces() -- Also runs when this file is reloaded.
+hl.on("hyprland.start", configureWorkspaces)
+hl.on("monitor.added", function() configureWorkspaces() end)
+hl.on("monitor.removed", function(monitor) configureWorkspaces(monitor.name) end)
 
--- SUPER + mouse wheel: switch through open workspaces
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
-
---------------------------------
--- WINDOWS AND WORKSPACES
---------------------------------
-
--- Persistent workspaces for both home monitors.
-if homeMonitor then
-    for i = 1, 10 do
-        hl.workspace_rule({
-            workspace = tostring(i),
-            monitor = homeMonitor,
-            default = i == 1,
-            persistent = true,
-        })
+local function selectWorkspace(number, moveWindow)
+    local monitor = hl.get_active_monitor()
+    if not monitor then return end
+    local workspace = monitor.id * 10 + number
+    if moveWindow then
+        hl.dispatch(hl.dsp.window.move({ workspace = workspace }))
+    else
+        hl.dispatch(hl.dsp.focus({ workspace = workspace }))
     end
 end
 
-if secondaryMonitor then
-    hl.workspace_rule({
-        workspace = "11",
-        monitor = secondaryMonitor,
-        default = true,
-        persistent = true,
-    })
+-- Super+1...0 selects a workspace on the focused monitor; Shift moves a window.
+for number = 1, 10 do
+    local key = number % 10
+    hl.bind(mainMod .. " + " .. key, function() selectWorkspace(number, false) end)
+    hl.bind(mainMod .. " + SHIFT + " .. key, function() selectWorkspace(number, true) end)
 end
 
--- Home app placement.
-if homeMonitor then
-    hl.window_rule({
-        match = { class = "^(spotify)$" },
-        monitor = homeMonitor,
-        workspace = "10 silent",
-    })
+-- Super+wheel wraps through the focused monitor's ten workspaces.
+local function stepWorkspace(step)
+    local monitor = hl.get_active_monitor()
+    if not monitor or not monitor.active_workspace then return end
+    selectWorkspace((monitor.active_workspace.id - 1 + step) % 10 + 1, false)
 end
+hl.bind(mainMod .. " + mouse_down", function() stepWorkspace(1) end)
+hl.bind(mainMod .. " + mouse_up", function() stepWorkspace(-1) end)
 
--- Example float rule kept from the work config.
--- hl.window_rule({
---     match = { class = "^(float.*)$", title = "^(foo)$" },
---     float = true,
--- })
-
--- Useful rules kept from the old configuration.
+-- WINDOW RULES
+-- Ignore applications requesting maximization; tiling controls their size.
 hl.window_rule({
     match = { class = ".*" },
     suppress_event = "maximize",
@@ -299,3 +251,14 @@ hl.window_rule({
     },
     no_focus = true,
 })
+
+-- HARDWARE PROFILE
+-- Deployment links this to one of hypr/profiles/*.lua; no generated Lua settings.
+-- Without a selected profile, the desktop defaults above apply.
+local configHome = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
+local profile = configHome .. "/debian-deploy/graphics.lua"
+local profileFile = io.open(profile, "r")
+if profileFile then
+    profileFile:close()
+    dofile(profile)
+end

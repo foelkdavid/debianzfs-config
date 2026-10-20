@@ -1,0 +1,1 @@
+-- AMD: the common Hyprland settings work without GPU overrides.
