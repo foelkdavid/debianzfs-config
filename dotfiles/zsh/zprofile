@@ -1,0 +1,7 @@
+# DebianZFS starts Hyprland only for an interactive login on the first local
+# virtual terminal. Exiting Hyprland returns to this shell.
+if [[ -o interactive && -o login && -z ${SSH_CONNECTION:-} && -z ${SSH_TTY:-} &&
+      -z ${DISPLAY:-} && -z ${WAYLAND_DISPLAY:-} && -z ${HYPRLAND_INSTANCE_SIGNATURE:-} &&
+      ${SHLVL:-1} -eq 1 && $(tty) == /dev/tty1 ]]; then
+    start-hyprland
+fi

@@ -24,6 +24,7 @@ for config in alacritty zsh gtk-3.0 nvim hypr; do
     link_config "$REPO_DIR/dotfiles/$config" "$CONFIG_DIR/$config"
 done
 link_config "$REPO_DIR/dotfiles/zsh/zshrc" "$HOME/.zshrc"
+link_config "$REPO_DIR/dotfiles/zsh/zprofile" "$HOME/.zprofile"
 
 if command -v xdg-user-dirs-update >/dev/null 2>&1; then xdg-user-dirs-update; fi
 bash "$REPO_DIR/scripts/zsh/deploy.sh"
@@ -72,19 +73,6 @@ done
 install -d -m 755 "$CONFIG_DIR/systemd/user/pipewire.service.wants"
 ln -sfn /usr/lib/systemd/user/wireplumber.service \
     "$CONFIG_DIR/systemd/user/pipewire.service.wants/wireplumber.service"
-
-if ! grep -q '^# BEGIN DebianZFS TTY1$' "$HOME/.zprofile" 2>/dev/null; then
-    cat >> "$HOME/.zprofile" <<'EOF'
-
-# BEGIN DebianZFS TTY1
-if [[ -o interactive && -o login && -z ${SSH_CONNECTION:-} && -z ${SSH_TTY:-} &&
-      -z ${DISPLAY:-} && -z ${WAYLAND_DISPLAY:-} && -z ${HYPRLAND_INSTANCE_SIGNATURE:-} &&
-      ${SHLVL:-1} -eq 1 && $(tty) == /dev/tty1 ]]; then
-    start-hyprland
-fi
-# END DebianZFS TTY1
-EOF
-fi
 
 mkdir -p -- "$STATE_DIR"
 printf 'Configuration linked from %s. Run this script again after git pull to update links and shortcuts.\n' "$REPO_DIR"
