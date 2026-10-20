@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DebianZFS Ticket
+Comment=Create a DebianZFS support ticket
+Exec=firefox-esr --new-window https://github.com/foelkdavid/debian-docs/issues/new?labels=Liveticket
+Icon=debianzfs-ticket
+Terminal=false
+StartupNotify=true
+Categories=Documentation;Help;
