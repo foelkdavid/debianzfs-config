@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+set +x
+
+[[ $EUID != 0 ]] || { echo 'Run this as your desktop user, without sudo.' >&2; exit 1; }
 
 FONT_VERSION=v3.3.0
 FONTS=(CodeNewRoman ComicShannsMono)
 FONT_DIR=${XDG_DATA_HOME:-$HOME/.local/share}/fonts/nerd-fonts
 FONT_WORK_DIR=$(mktemp -d)
 trap 'rm -rf -- "$FONT_WORK_DIR"' EXIT
+FONT_CHANGED=false
 
 for font in "${FONTS[@]}"; do
     destination="$FONT_DIR/$font"
@@ -13,6 +17,7 @@ for font in "${FONTS[@]}"; do
         continue
     fi
     printf 'Installing %s Nerd Font (%s)...\n' "$font" "$FONT_VERSION"
+    FONT_CHANGED=true
     curl --fail --location --retry 3 --output "$FONT_WORK_DIR/$font.zip" \
         "https://github.com/ryanoasis/nerd-fonts/releases/download/$FONT_VERSION/$font.zip"
     unzip -q "$FONT_WORK_DIR/$font.zip" -d "$FONT_WORK_DIR/$font"
@@ -25,4 +30,4 @@ for font in "${FONTS[@]}"; do
     (( font_count > 0 )) || { printf 'No font files in %s.zip\n' "$font" >&2; exit 1; }
     printf '%s\n' "$FONT_VERSION" > "$destination/.version"
 done
-fc-cache -f "$FONT_DIR"
+if [[ $FONT_CHANGED == true ]]; then fc-cache -f "$FONT_DIR"; fi

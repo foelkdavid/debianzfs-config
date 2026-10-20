@@ -1,17 +1,23 @@
-# DebianZFS user configuration
+# DebianZFS config
 
-This repository contains the user-facing configuration and maintenance scripts
-for DebianZFS. The installer pins it as a Git submodule, then installs it at
-`~/.local/debianzfs-config`. The live image uses the same files.
+This repository contains the user dotfiles and per-user setup scripts. The
+installer places it at `~/.local/debianzfs-config`.
 
-Run `./deploy.sh` as the desktop user to link the dotfiles and install the
-help and ticket shortcuts. Existing symlinks are replaced on each run; real
-files are saved under `~/.local/state/debianzfs-config/backups/` before they
-are replaced. After updating the checkout with `git pull`, rerun the script.
+Run `./deploy.sh` as your desktop user. It runs each focused component under
+`scripts/`. To refresh after `git pull`, run `./deploy.sh` again. Unchanged
+links and generated files are left in place; existing files replaced by
+managed dotfiles are backed up in `~/.local/state/debianzfs-config/backups/`.
 
-The scripts in `scripts/` can also be run individually. The installer owns
-system packages and privileged wallpaper placement; this repository owns
-per-user configuration and the shortcut assets.
+Each component can also be run on its own:
 
-Set `DEBIANZFS_SKIP_OPTIONAL_ASSETS=true` to skip font downloads and Zsh plugin
-cloning when refreshing the links offline.
+- `scripts/dotfiles/deploy.sh` links all dotfiles, including Zsh and its login
+  startup. It also installs the Zsh plugins.
+- `scripts/noctalia/deploy.sh` sets up Noctalia user settings and audio/portal
+  integration.
+- `scripts/help-shortcuts/deploy.sh` installs the Help and Ticket launchers.
+- `scripts/fonts/deploy.sh` installs the configured Nerd Fonts.
+
+All scripts run as the desktop user without `sudo`. The installer handles
+system packages and puts the wallpaper in `/opt/media/wall`. Set
+`DEBIANZFS_SKIP_OPTIONAL_ASSETS=true` with the root `deploy.sh` to skip plugin
+and font downloads during offline refreshes.
