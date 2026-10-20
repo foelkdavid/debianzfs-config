@@ -16,7 +16,8 @@ Each component can also be run on its own:
   integration.
 - `scripts/help-shortcuts/deploy.sh` installs the Help and Ticket launchers in
   the application menu and removes their old Desktop copies. It does not create
-  a Desktop folder.
+  a Desktop folder. It disables the XDG Desktop directory so desktop
+  environment setup does not recreate it on later logins.
 - `scripts/fonts/deploy.sh` installs the configured Nerd Fonts.
 
 All scripts run as the desktop user without `sudo`. The installer handles

@@ -4,8 +4,16 @@ set +x
 REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
 [[ $EUID != 0 ]] || { echo 'Run this as your desktop user, without sudo.' >&2; exit 1; }
 DATA_DIR=${XDG_DATA_HOME:-$HOME/.local/share}
+CONFIG_DIR=${XDG_CONFIG_HOME:-$HOME/.config}
 desktop_dir=$(xdg-user-dir DESKTOP 2>/dev/null || true)
 [[ -n $desktop_dir ]] || desktop_dir="$HOME/Desktop"
+user_dirs_file="$CONFIG_DIR/user-dirs.dirs"
+install -d -m 755 "$CONFIG_DIR"
+if [[ -f $user_dirs_file ]] && grep -q '^XDG_DESKTOP_DIR=' "$user_dirs_file"; then
+    sed -i 's|^XDG_DESKTOP_DIR=.*|XDG_DESKTOP_DIR="$HOME/"|' "$user_dirs_file"
+else
+    printf '\nXDG_DESKTOP_DIR="$HOME/"\n' >> "$user_dirs_file"
+fi
 if [[ -d $desktop_dir ]]; then
     rm -f -- "$desktop_dir/DebianZFS Help.desktop" \
         "$desktop_dir/DebianZFS Ticket.desktop"
